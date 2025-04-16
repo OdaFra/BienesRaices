@@ -1,5 +1,5 @@
 import { check, validationResult } from "express-validator";
-import { emailRegistro } from "../helpers/emails.js";
+import { emailRegistro, olvidePassword } from "../helpers/emails.js";
 import { generarId } from "../helpers/token.js";
 import Usuario from "../models/Usuario.js";
 
@@ -13,7 +13,6 @@ const formularioLogin = (req, res) => {
 
 // -> Registrar
 const formularioRegistro = (req, res) => {
-
   res.render("auth/registro", {
     pagina: "Crear cuenta",
     csurfToken: req.csrfToken(),
@@ -98,7 +97,6 @@ const registrar = async (req, res) => {
 
 // -> Confirmar cuenta (comprobar)
 const confirmar = async (req, res) => {
-  
   const { token } = req.params;
 
   //Verificar si el token es valido para confirmar tu cuenta
@@ -130,21 +128,93 @@ const confirmar = async (req, res) => {
       error: true,
     });
   }
-
-
-
 };
 
 // -> Olvide mi pass
 const formularioOlvidePassword = (req, res) => {
   res.render("auth/olvide-password", {
     pagina: "Recupera tu acceso a Bienes raices",
+    csurfToken: req.csrfToken(),
   });
 };
 
-export {
-  confirmar, formularioLogin,
-  formularioOlvidePassword,
-  formularioRegistro, registrar
+//Reset de password
+const resetPassword = async (req, res) => {
+  //validar
+
+  await check("email")
+    .isEmail()
+    .withMessage("El email es obligatorio")
+    .run(req);
+
+  let resultado = validationResult(req);
+
+  // Verificar que el resultado este vacio
+
+  if (!resultado.isEmpty()) {
+    return res.render("auth/olvide-password", {
+      pagina: "Recupera tu acceso a Bienes raices",
+      _csrf: req.csrfToken(),
+      errores: resultado.array(),
+    });
+  }
+  // Si el email existe
+  const { email } = req.body;
+  const existeUsuario = await Usuario.findOne({ where: { email } });
+
+  if (!existeUsuario) {
+    return res.render("auth/olvide-password", {
+      pagina: "Recupera tu acceso a Bienes raices",
+      _csrf: req.csrfToken(),
+      errores: [{ msg: "El email no pertenece a ningun usuario" }],
+    });
+  }
+  // Generar un token y enviar al email
+
+  existeUsuario.token = generarId();
+  await existeUsuario.save();
+  //Enviar el email
+  olvidePassword({
+    nombre: existeUsuario.nombre,
+    email: existeUsuario.email,
+    token: existeUsuario.token,
+  });
+
+  //Mostrar mensaje de confirmacion
+  res.render("templates/mensaje", {
+    pagina: "Reestablece tu password",
+    mensaje: "Hemos enviado un email con las instrucciones",
+  });
+};
+// -> Comprobar token
+const comporbararToken = async (req, res) => {
+  const { token } = req.params;
+  //Verificar si el token es valido para confirmar tu cuenta
+  const usuario = await Usuario.findOne({
+    where: {
+      token,
+    },
+  });
+
+  if (!usuario) {
+    return res.render("auth/confirmar-cuenta", {
+      pagina: "Restablecer password",
+      mensaje: "Hubo un error al comprobar tu identidad",
+      error: true,
+    });
+  }
 };
 
+// -> Nuevo password
+const nuevoPassword = async (req, res) => {};
+
+export {
+  comporbararToken,
+  confirmar,
+  formularioLogin,
+  formularioOlvidePassword,
+  formularioRegistro,
+  nuevoPassword,
+  registrar,
+  resetPassword,
+};
