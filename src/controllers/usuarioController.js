@@ -1,15 +1,82 @@
 import bcrypt from "bcrypt";
 import { check, validationResult } from "express-validator";
+import jwt from "jsonwebtoken";
 import { emailRegistro, olvidePassword } from "../helpers/emails.js";
 import { generarId } from "../helpers/token.js";
 import Usuario from "../models/Usuario.js";
 
 // CONTROLLERS
-// -> LOGIN
+// -> Login
 const formularioLogin = (req, res) => {
   res.render("auth/login", {
-    pagina: "Inicio de sesión",
+    pagina: "Iniciar Sesion",
+    csrfToken: req.csrfToken(),
   });
+};
+
+// -> Autenticar
+const autenticar = async (req, res) => {
+  //Validar de email y password
+  await check("email")
+    .isEmail()
+    .withMessage("El email es obligatorio")
+    .run(req);
+  await check("password")
+    .notEmpty()
+    .withMessage("El password es obligatorio")
+    .run(req);
+
+  let resultado = validationResult(req);
+  // Verificar que el resultado este vacio
+  if (!resultado.isEmpty()) {
+    return res.render("auth/login", {
+      pagina: "Iniciar Sesion",
+      csrfToken: req.csrfToken(),
+      errores: resultado.array(),
+    });
+  }
+  // Extraer el email y password
+  const { email, password } = req.body;
+  // Comprobar si el usuario existe
+  const usuario = await Usuario.findOne({ where: { email } });
+  if (!usuario) {
+    return res.render("auth/login", {
+      pagina: "Iniciar Sesion",
+      csrfToken: req.csrfToken(),
+      errores: [{ msg: "El usuario no existe" }],
+    });
+  }
+  // Comprobar si el usuario esta confirmado
+  if (!usuario.confirmado) {
+    return res.render("auth/login", {
+      pagina: "Iniciar Sesion",
+      csrfToken: req.csrfToken(),
+      errores: [{ msg: "Tu cuenta no ha sido confirmada" }],
+    });
+  }
+  // Revisar el password
+  if (!usuario.verificarPassword(password)) {
+    return res.render("auth/login", {
+      pagina: "Iniciar Sesion",
+      csrfToken: req.csrfToken(),
+      errores: [{ msg: "El password es incorrecto" }],
+    });
+  }
+
+  // Autenticar al usuario
+  const token = jwt.sign(
+    {
+      nombre: "Oscar",
+      empresa: "Bienes Raices",
+      tecnologia: "Node.js",
+    },
+    "palabrasupersecretas",
+    {
+      expiresIn: "1h",
+    }
+  );
+
+  console.log('token', token);
 };
 
 // -> Registrar
@@ -205,12 +272,10 @@ const comporbararToken = async (req, res) => {
     });
   }
   // Mostrar formulario para nuevo password
-  res.render('auth/reset-password',{
+  res.render("auth/reset-password", {
     pagina: "Restablece tu password",
     csrfToken: req.csrfToken(),
-  })
-
-
+  });
 };
 
 // -> Nuevo password
@@ -235,10 +300,10 @@ const nuevoPassword = async (req, res) => {
   const { password } = req.body;
 
   //identificar al usuario
-  const usuario = await Usuario.findOne({ where: {token}})
+  const usuario = await Usuario.findOne({ where: { token } });
 
   // hash el nuevo password
-  const salt = await  bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(10);
   usuario.password = await bcrypt.hash(password, salt);
   usuario.token = null;
   await usuario.save();
@@ -247,10 +312,10 @@ const nuevoPassword = async (req, res) => {
     pagina: "Password restablecido",
     mensaje: "El password se ha modificado correctamente",
   });
-
 };
 
 export {
+  autenticar,
   comporbararToken,
   confirmar,
   formularioLogin,
