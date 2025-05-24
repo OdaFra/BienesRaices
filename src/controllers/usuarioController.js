@@ -1,8 +1,7 @@
 import bcrypt from "bcrypt";
 import { check, validationResult } from "express-validator";
-import jwt from "jsonwebtoken";
 import { emailRegistro, olvidePassword } from "../helpers/emails.js";
-import { generarId } from "../helpers/token.js";
+import { generarId, generarJWT } from "../helpers/token.js";
 import Usuario from "../models/Usuario.js";
 
 // CONTROLLERS
@@ -14,7 +13,7 @@ const formularioLogin = (req, res) => {
   });
 };
 
-// -> Autenticar
+// -> Autenticar/login
 const autenticar = async (req, res) => {
   //Validar de email y password
   await check("email")
@@ -64,19 +63,16 @@ const autenticar = async (req, res) => {
   }
 
   // Autenticar al usuario
-  const token = jwt.sign(
-    {
-      nombre: "Oscar",
-      empresa: "Bienes Raices",
-      tecnologia: "Node.js",
-    },
-    "palabrasupersecretas",
-    {
-      expiresIn: "1h",
-    }
-  );
-
+  const token = generarJWT({id:usuario.id, nombre: usuario.nombre});
   console.log('token', token);
+
+  // Almacenar en un cookie
+  return res.cookie("_token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
+  }).redirect("/mis-propiedades");
+
 };
 
 // -> Registrar
