@@ -4,6 +4,7 @@ import express from "express";
 import cookeiParse from "cookie-parser";
 import csurf from "csurf";
 import db from "./config/db.js";
+import propiedadesRouter from "./routers/propiedadesRoutes.js";
 import usuarioRouter from "./routers/usuarioRouter.js";
 
 //Crear la app
@@ -30,6 +31,7 @@ try {
 //Routing
 //La funcion .use se utiliza para escanear todas las rutas actuando como middlewares
 app.use("/auth", usuarioRouter);
+app.use("/", propiedadesRouter);
 
 //Carpeta publicas
 app.use(express.static("./src/public"));
