@@ -5,9 +5,11 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "dev": "src/index.js",
+    
     "dev:nodemon": "nodemon",
-    "css": "postcss ./src/public/css/tailwind.css -o  ./src/public/css/app.css --watch"
+    "css": "postcss ./src/public/css/tailwind.css -o  ./src/public/css/app.css --watch",
+    "js": "webpack --watch",
+    "dev": "concurrently \"npm run css \" \"npm run js\" "
   },
   "author": "Odafra",
   "license": "ISC",
@@ -26,9 +28,12 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
+    "concurrently": "^9.1.2",
     "nodemon": "^3.1.0",
     "postcss": "^8.5.3",
     "postcss-cli": "^11.0.1",
-    "tailwindcss": "^3.4.3"
+    "tailwindcss": "^3.4.3",
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1"
   }
 }
