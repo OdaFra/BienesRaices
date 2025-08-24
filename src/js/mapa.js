@@ -1,49 +1,66 @@
-(function() {
-    // Coordenadas por defecto (si falla la geolocalización)
-    let lat = -25.2714174;
-    let lng = -57.49259;
+(function () {
+  // Coordenadas por defecto (si falla la geolocalización)
+  let lat = -25.2714174;
+  let lng = -57.49259;
+  const mapa = L.map("mapa").setView([lat, lng], 12);
 
-    const mapa = L.map('mapa').setView([lat, lng], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(mapa);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(mapa);
 
-    let marker;
+  const geocoderService = L.esri.Geocoding.geocodeService();
 
-    const agregarMarcador = (lat, lng) => {
-        if (marker) mapa.removeLayer(marker);
-        
-        marker = L.marker([lat, lng], {
-            draggable: true,
-            autoPan: true
-        }).addTo(mapa);
+  // El PIN
+  const marker = L.marker([lat, lng], {
+    draggable: true,
+    autoPan: true,
+  }).addTo(mapa);
 
-        // Evento único para manejar el fin del arrastre/movimiento
-        marker.on('dragend', (e) => {
-            const nuevaPos = marker.getLatLng();
-            console.log("Posición después de arrastrar (dragend):", nuevaPos.lat, nuevaPos.lng);
-            mapa.panTo(nuevaPos); // Centrar el mapa en la nueva posición
-            lat = nuevaPos.lat;
-            lng = nuevaPos.lng;
-        });
-    };
+  // Detectar cuando se deja de arrastrar el marcador
+  marker.on("moveend", function (e) {
+    const marker = e.target; // este es el marcador actual
+    const posicion = marker.getLatLng();
 
-    // Geolocalización
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                lat = position.coords.latitude;
-                lng = position.coords.longitude;
-                mapa.setView([lat, lng], 12);
-                agregarMarcador(lat, lng);
-            },
-            (error) => {
-                console.error("Error:", error);
-                agregarMarcador(lat, lng);
-            }
-        );
-    } else {
-        console.error("Geolocalización no soportada.");
-        agregarMarcador(lat, lng);
-    }
+    console.log("Marcador arrastrado:", marker);
+    console.log(`Posición del marcador: ${posicion.lat}, ${posicion.lng}`);
+
+    mapa.panTo(posicion);
+
+    // Obtener información de la calle
+    geocoderService
+      .reverse()
+      .latlng(posicion, 12)
+      .run(function (error, resultado) {
+        if (error) {
+          console.error("Error en geocoder:", error);
+          return;
+        }
+
+        const address =
+          (resultado && resultado.address && (
+            resultado.address.LongLabel ||
+            resultado.address.Match_addr ||
+            resultado.address.Address
+          )) || "Dirección no encontrada";
+
+        // Mostrar popup en el marcador correcto
+        marker.bindPopup(address).openPopup();
+
+        console.log("Resultado del geocoder:", resultado);
+
+        // Llenar campos ocultos
+        const calleP = document.querySelector("p.calle");
+        if (calleP) calleP.textContent = address;
+
+        const calleInput = document.getElementById("calle");
+        if (calleInput) calleInput.value = address;
+
+        const latInput = document.getElementById("lat");
+        if (latInput) latInput.value = String(posicion.lat);
+
+        const lngInput = document.getElementById("lng");
+        if (lngInput) lngInput.value = String(posicion.lng);
+      });
+  });
 })();

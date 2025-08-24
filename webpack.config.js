@@ -7,6 +7,6 @@ export default{
     },
     output:{
         filename:'[name].js',
-        path:path.resolve('src/public/js')
+        path:path.resolve('./src/public/js')
     }
 }
