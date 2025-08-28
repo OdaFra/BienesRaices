@@ -31,6 +31,9 @@ block contenido
                             name="categoria"
                         )
                             option(value="") - Seleccione -
+                            each categoria in categorias
+                                option(value=categoria.id) #{categoria.nombre}
+                            
                     div(class="md:w-1/2")
                         label.block.text-sm.uppercase.text-gray-500.mb-2.font-bold(for="precio") Precio
                         select#precio(
@@ -38,6 +41,8 @@ block contenido
                             name="precio"
                         )
                             option(value="") - Seleccione -
+                            each precio in precios
+                                option(value=precio.id) #{precio.nombre}
 
                 div(class="md:flex md:gap-4 space-y-5 md:space-y-0 ")
                     div(class="md:w-1/3")
