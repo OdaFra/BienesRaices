@@ -9,7 +9,9 @@
     "dev:nodemon": "nodemon",
     "css": "postcss ./src/public/css/tailwind.css -o  ./src/public/css/app.css --watch",
     "js": "webpack --watch",
-    "dev": "concurrently \"npm run css \" \"npm run js\" "
+    "dev": "concurrently \"npm run css \" \"npm run js\" ",
+    "db:importar":"node ./seed/seeder.js -i",
+    "db:eliminar":"node ./seed/seeder.js -e"
   },
   "author": "Odafra",
   "license": "ISC",
@@ -37,3 +39,4 @@
     "webpack-cli": "^6.0.1"
   }
 }
+
