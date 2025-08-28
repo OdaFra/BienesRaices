@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import db from "../config/db.js";
 
+// Modelo para tabla de propiedades en la db.
 const Propiedad = db.define("propiedades", {        
     id:{
         type: DataTypes.UUID,
